@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14101c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="Adopta, cuida y juega con tu mascota virtual.">
+<title>Mascota Virtual</title>
+<style>
+:root{
+  --fondo:#14101c; --panel:#241a35; --borde:#3a2b52; --texto:#efe9f7;
+  --suave:#a794c4; --acento:#a77bff; --ok:#5ec9a3; --mal:#e06b8b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;min-height:100%;
+  padding:calc(18px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% -10%,#2b1d45,#14101c 62%);
+  color:var(--texto);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  display:flex;justify-content:center;
+}
+.marco{width:100%;max-width:480px}
+.cabecera{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px}
+.cabecera h1{font-size:16px;margin:0;letter-spacing:.6px;font-weight:600}
+.cabecera .herramientas{display:flex;gap:8px}
+.icono{
+  background:#251a38;border:1px solid var(--borde);color:var(--suave);
+  border-radius:10px;padding:7px 11px;font:inherit;font-size:12px;cursor:pointer;
+}
+.icono:hover{color:var(--texto);border-color:var(--acento)}
+.panel{background:linear-gradient(160deg,var(--panel),#1b1428);border:1px solid var(--borde);border-radius:18px;padding:20px}
+.oculto{display:none!important}
+
+/* --- selección --- */
+.titulo{font-size:19px;margin:0 0 4px}
+.sub{font-size:13px;color:var(--suave);margin:0 0 18px;line-height:1.5}
+.rejilla{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.opcion{
+  background:#1d1530;border:1px solid var(--borde);border-radius:14px;
+  padding:8px 4px 10px;cursor:pointer;text-align:center;font:inherit;color:var(--suave);
+  font-size:11.5px;transition:border-color .15s,transform .15s;
+}
+.opcion:hover{border-color:var(--acento);transform:translateY(-2px)}
+.opcion.elegida{border-color:var(--acento);background:#2a1e42;color:var(--texto)}
+.opcion svg{width:100%;height:auto;display:block;margin-bottom:2px}
+.campo{margin-top:18px}
+label{display:block;font-size:12.5px;color:var(--suave);margin-bottom:6px}
+input{
+  width:100%;padding:12px;border-radius:11px;border:1px solid var(--borde);
+  background:#191223;color:var(--texto);font:inherit;
+}
+input:focus{outline:2px solid var(--acento);outline-offset:1px}
+.principal{
+  width:100%;margin-top:16px;padding:13px;border-radius:11px;border:0;
+  background:var(--acento);color:#170f26;font:inherit;font-weight:700;cursor:pointer;
+}
+.principal:disabled{opacity:.45;cursor:not-allowed}
+.principal:hover:not(:disabled){filter:brightness(1.1)}
+
+/* --- juego --- */
+.escenario{
+  position:relative;border-radius:16px;overflow:hidden;
+  background:radial-gradient(circle at 50% 30%,#33234d,#1d1530 75%);
+  padding:8px 0 4px;text-align:center;
+}
+.escenario::after{
+  content:"";position:absolute;inset:auto 0 0 0;height:52px;
+  background:linear-gradient(transparent,rgba(20,16,28,.85));
+}
+#arte{width:100%;max-width:250px;height:auto;display:inline-block;position:relative;z-index:1}
+#arte.flotar{animation:flotar 3.4s ease-in-out infinite}
+#arte.desmayada{filter:grayscale(.75) brightness(.8)}
+@keyframes flotar{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.03)}}
+@keyframes latir{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+
+.piel{fill:var(--c1)}
+.piel-2{fill:var(--c2)}
+.ala{fill:var(--c2);opacity:.75}
+.sombra{fill:rgba(0,0,0,.28)}
+.trazo{fill:none;stroke:#241a35;stroke-width:4.5;stroke-linecap:round}
+.trazo.fino{stroke-width:3;opacity:.6}
+.pupila{fill:#241a35}
+.brillo{fill:#fff;opacity:.85}
+.rubor{fill:#f27ba0;opacity:.55}
+.lagrima{fill:#8fd0ff}
+.zzz{fill:#c6b3e6;font-size:17px;font-weight:700;font-family:system-ui,sans-serif;animation:latir 2s ease-in-out infinite}
+.zzz.chico{font-size:12px;animation-delay:.5s}
+.v{display:none}
+[data-estado="feliz"] .v-feliz,
+[data-estado="normal"] .v-normal,
+[data-estado="triste"] .v-triste,
+[data-estado="dormido"] .v-dormido{display:block}
+
+.ficha{text-align:center;margin:12px 0 4px}
+.ficha .nombre{font-size:18px;font-weight:700;margin:0}
+.ficha .nivel{font-size:12px;color:var(--suave);margin:3px 0 0}
+.barra{margin:10px 0}
+.rotulo{display:flex;justify-content:space-between;font-size:12px;color:var(--suave);margin-bottom:5px}
+.pista{height:10px;background:#2c2140;border-radius:99px;overflow:hidden}
+.relleno{height:100%;width:0;border-radius:99px;transition:width .4s ease}
+.r1{background:linear-gradient(90deg,#f0a04b,#f6c177)}
+.r2{background:linear-gradient(90deg,#5ec9a3,#8ee0c1)}
+.r3{background:linear-gradient(90deg,#7aa8f0,#a7c6ff)}
+.r4{background:linear-gradient(90deg,#c98ee0,#e0b4f0)}
+.r5{background:linear-gradient(90deg,#e06b8b,#f09bb1)}
+.acciones{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.acciones button{
+  padding:12px 4px;border-radius:12px;font:inherit;font-size:12px;cursor:pointer;
+  background:#2e2244;border:1px solid #453263;color:var(--texto);transition:background .15s;
+}
+.acciones button:hover:not(:disabled){background:#3a2b55}
+.acciones button:disabled{opacity:.38;cursor:not-allowed}
+.registro{
+  margin:14px 0 0;padding-top:12px;border-top:1px solid #32254a;
+  font-size:12.5px;color:var(--suave);min-height:22px;line-height:1.5;
+}
+.pie{font-size:11px;color:#6f6188;text-align:center;margin:16px 0 0;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="marco">
+  <header class="cabecera">
+    <h1>Mascota Virtual</h1>
+    <div class="herramientas" id="herramientas" hidden>
+      <button class="icono" id="btn-enlace" type="button">Copiar enlace</button>
+      <button class="icono" id="btn-reiniciar" type="button">Reiniciar</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" id="seleccion">
+      <h2 class="titulo">Elige a tu compañero</h2>
+      <p class="sub">Seis especies, cada una con su carácter. Podrás alimentarla, jugar, limpiarla, dormirla y curarla.</p>
+      <div class="rejilla" id="rejilla"></div>
+      <div class="campo">
+        <label for="nombre">Ponle nombre</label>
+        <input id="nombre" maxlength="16" placeholder="Ej. Michi" autocomplete="off">
+      </div>
+      <button class="principal" id="btn-adoptar" type="button" disabled>Adoptar</button>
+    </section>
+
+    <section class="panel oculto" id="juego">
+      <div class="escenario">
+        <div id="arte" data-estado="normal"></div>
+      </div>
+      <div class="ficha">
+        <p class="nombre" id="nombre-pet"></p>
+        <p class="nivel">Nivel <span id="nivel">1</span> · <span id="xp">0</span>/<span id="xp-sig">100</span> XP</p>
+      </div>
+      <div class="barra"><div class="rotulo"><span>Comida</span><span id="v-hambre">80</span></div><div class="pista"><div class="relleno r1" id="b-hambre"></div></div></div>
+      <div class="barra"><div class="rotulo"><span>Felicidad</span><span id="v-felicidad">80</span></div><div class="pista"><div class="relleno r2" id="b-felicidad"></div></div></div>
+      <div class="barra"><div class="rotulo"><span>Energía</span><span id="v-energia">80</span></div><div class="pista"><div class="relleno r3" id="b-energia"></div></div></div>
+      <div class="barra"><div class="rotulo"><span>Higiene</span><span id="v-higiene">80</span></div><div class="pista"><div class="relleno r4" id="b-higiene"></div></div></div>
+      <div class="barra"><div class="rotulo"><span>Salud</span><span id="v-salud">100</span></div><div class="pista"><div class="relleno r5" id="b-salud"></div></div></div>
+      <div class="acciones">
+        <button type="button" data-accion="alimentar">Alimentar</button>
+        <button type="button" data-accion="jugar">Jugar</button>
+        <button type="button" data-accion="limpiar">Limpiar</button>
+        <button type="button" data-accion="dormir">Dormir</button>
+        <button type="button" data-accion="curar">Curar</button>
+        <button type="button" data-accion="acariciar">Acariciar</button>
+      </div>
+      <p class="registro" id="registro" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <p class="pie" id="pie">Tu progreso se guarda en este navegador.</p>
+</div>
+
+<noscript><p style="text-align:center">Activa JavaScript para jugar.</p></noscript>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- definiciones ---------------- */
+
+  function cara(ex1, ex2, ey, mx, my) {
+    var o = [];
+    o.push('<g class="v v-feliz">'
+      + '<path d="M' + (ex1 - 9) + ' ' + ey + ' q9 -13 18 0" class="trazo"/>'
+      + '<path d="M' + (ex2 - 9) + ' ' + ey + ' q9 -13 18 0" class="trazo"/>'
+      + '<path d="M' + (mx - 12) + ' ' + (my - 5) + ' q12 13 24 0" class="trazo"/>'
+      + '<ellipse cx="' + (ex1 - 21) + '" cy="' + (ey + 15) + '" rx="9" ry="5" class="rubor"/>'
+      + '<ellipse cx="' + (ex2 + 21) + '" cy="' + (ey + 15) + '" rx="9" ry="5" class="rubor"/>'
+      + '</g>');
+    o.push('<g class="v v-normal">'
+      + '<circle cx="' + ex1 + '" cy="' + ey + '" r="7.5" class="pupila"/>'
+      + '<circle cx="' + ex2 + '" cy="' + ey + '" r="7.5" class="pupila"/>'
+      + '<circle cx="' + (ex1 + 2.6) + '" cy="' + (ey - 2.6) + '" r="2.4" class="brillo"/>'
+      + '<circle cx="' + (ex2 + 2.6) + '" cy="' + (ey - 2.6) + '" r="2.4" class="brillo"/>'
+      + '<path d="M' + (mx - 6) + ' ' + my + ' q6 6 12 0" class="trazo"/>'
+      + '</g>');
+    o.push('<g class="v v-triste">'
+      + '<circle cx="' + ex1 + '" cy="' + (ey + 2) + '" r="7" class="pupila"/>'
+      + '<circle cx="' + ex2 + '" cy="' + (ey + 2) + '" r="7" class="pupila"/>'
+      + '<path d="M' + (ex1 - 9) + ' ' + (ey - 9) + ' q9 6 16 1" class="trazo fino"/>'
+      + '<path d="M' + (ex2 + 9) + ' ' + (ey - 9) + ' q-9 6 -16 1" class="trazo fino"/>'
+      + '<path d="M' + (mx - 9) + ' ' + (my + 3) + ' q9 -8 18 0" class="trazo"/>'
+      + '<path d="M' + (ex1 - 15) + ' ' + (ey + 12) + ' q4 10 0 14 q-4 -4 0 -14" class="lagrima"/>'
+      + '</g>');
+    o.push('<g class="v v-dormido">'
+      + '<path d="M' + (ex1 - 9) + ' ' + ey + ' q9 8 18 0" class="trazo"/>'
+      + '<path d="M' + (ex2 - 9) + ' ' + ey + ' q9 8 18 0" class="trazo"/>'
+      + '<ellipse cx="' + mx + '" cy="' + my + '" rx="6" ry="7" class="pupila"/>'
+      + '<text x="' + (ex2 + 24) + '" y="' + (ey - 12) + '" class="zzz">z</text>'
+      + '<text x="' + (ex2 + 33) + '" y="' + (ey - 24) + '" class="zzz chico">z</text>'
+      + '</g>');
+    return o.join('');
+  }
+
+  var ESPECIES = [
+    { id: "gato", nombre: "Gato", c1: "#f0a04b", c2: "#ffcf9e",
+      cuerpo: '<ellipse cx="100" cy="158" rx="44" ry="15" class="sombra"/>'
+        + '<path d="M152 122 q34 -4 24 -40" class="trazo" style="stroke-width:7;stroke:#e08b36"/>'
+        + '<path d="M58 72 L50 34 L88 58 Z" class="piel"/>'
+        + '<path d="M142 72 L150 34 L112 58 Z" class="piel"/>'
+        + '<path d="M60 62 L57 45 L75 58 Z" class="piel-2"/>'
+        + '<path d="M140 62 L143 45 L125 58 Z" class="piel-2"/>'
+        + '<circle cx="100" cy="108" r="58" class="piel"/>'
+        + '<ellipse cx="76" cy="162" rx="15" ry="9" class="piel-2"/>'
+        + '<ellipse cx="124" cy="162" rx="15" ry="9" class="piel-2"/>',
+      ex1: 80, ex2: 120, ey: 104, mx: 100, my: 138 },
+
+    { id: "perro", nombre: "Perro", c1: "#c08a5c", c2: "#e8bd93",
+      cuerpo: '<ellipse cx="100" cy="158" rx="44" ry="15" class="sombra"/>'
+        + '<ellipse cx="50" cy="104" rx="16" ry="32" class="piel-2" transform="rotate(-12 50 104)"/>'
+        + '<ellipse cx="150" cy="104" rx="16" ry="32" class="piel-2" transform="rotate(12 150 104)"/>'
+        + '<circle cx="100" cy="108" r="58" class="piel"/>'
+        + '<ellipse cx="100" cy="132" rx="26" ry="20" class="piel-2"/>'
+        + '<ellipse cx="100" cy="124" rx="8" ry="6" class="pupila"/>'
+        + '<ellipse cx="74" cy="164" rx="15" ry="9" class="piel-2"/>'
+        + '<ellipse cx="126" cy="164" rx="15" ry="9" class="piel-2"/>',
+      ex1: 79, ex2: 121, ey: 100, mx: 100, my: 142 },
+
+    { id: "dragon", nombre: "Dragón", c1: "#63c99b", c2: "#a9f0cc",
+      cuerpo: '<ellipse cx="100" cy="158" rx="44" ry="15" class="sombra"/>'
+        + '<path d="M56 118 q-42 -34 -36 8 q20 16 38 4 Z" class="ala"/>'
+        + '<path d="M144 118 q42 -34 36 8 q-20 16 -38 4 Z" class="ala"/>'
+        + '<path d="M78 56 L72 32 L88 50 Z" class="piel-2"/>'
+        + '<path d="M122 56 L128 32 L112 50 Z" class="piel-2"/>'
+        + '<circle cx="100" cy="108" r="58" class="piel"/>'
+        + '<path d="M100 50 l6 12 l-12 0 Z" class="piel-2"/>'
+        + '<path d="M62 88 l8 8 l-8 8 l-8 -8 Z" class="piel-2" opacity=".7"/>'
+        + '<ellipse cx="76" cy="162" rx="15" ry="9" class="piel-2"/>'
+        + '<ellipse cx="124" cy="162" rx="15" ry="9" class="piel-2"/>',
+      ex1: 80, ex2: 120, ey: 106, mx: 100, my: 138 },
+
+    { id: "conejo", nombre: "Conejo", c1: "#ddd4ec", c2: "#f7f2ff",
+      cuerpo: '<ellipse cx="100" cy="160" rx="40" ry="13" class="sombra"/>'
+        + '<ellipse cx="79" cy="46" rx="13" ry="36" class="piel"/>'
+        + '<ellipse cx="121" cy="46" rx="13" ry="36" class="piel"/>'
+        + '<ellipse cx="79" cy="48" rx="6" ry="26" class="piel-2"/>'
+        + '<ellipse cx="121" cy="48" rx="6" ry="26" class="piel-2"/>'
+        + '<circle cx="100" cy="112" r="55" class="piel"/>'
+        + '<ellipse cx="78" cy="164" rx="14" ry="8" class="piel-2"/>'
+        + '<ellipse cx="122" cy="164" rx="14" ry="8" class="piel-2"/>',
+      ex1: 81, ex2: 119, ey: 108, mx: 100, my: 140 },
+
+    { id: "axolote", nombre: "Axolote", c1: "#f2a2c4", c2: "#ffd0e2",
+      cuerpo: '<ellipse cx="100" cy="160" rx="42" ry="13" class="sombra"/>'
+        + '<path d="M46 96 q-22 -14 -28 2" class="trazo" style="stroke:#e07fa8;stroke-width:6"/>'
+        + '<path d="M44 116 q-24 -2 -28 14" class="trazo" style="stroke:#e07fa8;stroke-width:6"/>'
+        + '<path d="M154 96 q22 -14 28 2" class="trazo" style="stroke:#e07fa8;stroke-width:6"/>'
+        + '<path d="M156 116 q24 -2 28 14" class="trazo" style="stroke:#e07fa8;stroke-width:6"/>'
+        + '<circle cx="100" cy="112" r="56" class="piel"/>'
+        + '<ellipse cx="78" cy="164" rx="14" ry="8" class="piel-2"/>'
+        + '<ellipse cx="122" cy="164" rx="14" ry="8" class="piel-2"/>',
+      ex1: 81, ex2: 119, ey: 108, mx: 100, my: 140 },
+
+    { id: "slime", nombre: "Slime", c1: "#8fd0ff", c2: "#cdeaff",
+      cuerpo: '<ellipse cx="100" cy="164" rx="52" ry="12" class="sombra"/>'
+        + '<path d="M42 156 q-8 -66 58 -70 q66 4 58 70 q-4 14 -58 14 q-54 0 -58 -14 Z" class="piel"/>'
+        + '<path d="M60 62 q4 14 0 22" class="trazo" style="stroke:#6fbdf0;stroke-width:5"/>'
+        + '<path d="M140 62 q-4 14 0 22" class="trazo" style="stroke:#6fbdf0;stroke-width:5"/>'
+        + '<ellipse cx="74" cy="122" rx="12" ry="6" class="piel-2" opacity=".8"/>',
+      ex1: 80, ex2: 120, ey: 118, mx: 100, my: 146 }
+  ];
+
+  function svgDe(esp) {
+    return '<svg viewBox="0 0 200 200" style="--c1:' + esp.c1 + ';--c2:' + esp.c2 + '">'
+      + esp.cuerpo + cara(esp.ex1, esp.ex2, esp.ey, esp.mx, esp.my) + '</svg>';
+  }
+
+  var ACCIONES = {
+    alimentar: { cd: 20, xp: 4 },
+    jugar:     { cd: 25, xp: 5 },
+    limpiar:   { cd: 40, xp: 4 },
+    dormir:    { cd: 60, xp: 3 },
+    curar:     { cd: 90, xp: 6 },
+    acariciar: { cd: 10, xp: 2 }
+  };
+
+  var FRASES = {
+    alimentar: ["devora el plato en segundos.", "come con ganas y se relame.", "deja el plato vacío."],
+    jugar: ["persigue la pelota sin parar.", "salta de alegría a tu alrededor.", "se lo pasa en grande."],
+    limpiar: ["queda reluciente.", "huele a limpio otra vez.", "se deja cepillar sin protestar."],
+    dormir: ["se acurruca y duerme.", "ronronea hasta quedarse dormido.", "echa una siesta profunda."],
+    curar: ["toma la medicina sin quejarse.", "respira mejor tras el remedio.", "se siente más fuerte."],
+    acariciar: ["cierra los ojos con tu caricia.", "se apoya en tu mano.", "ronronea bajito."]
+  };
+
+  var DECAIMIENTO = { hambre: 0.7, felicidad: 0.5, energia: 0.6, higiene: 0.25 };
+  var MAX_MIN = 720;
+  var CLAVE = "mascota.v2";
+
+  /* ---------------- estado ---------------- */
+
+  var estado = null;
+  var arte = document.getElementById("arte");
+  var registro = document.getElementById("registro");
+  var botones = Array.prototype.slice.call(document.querySelectorAll("[data-accion]"));
+  var elegida = null;
+
+  function limitar(v) { return Math.max(0, Math.min(100, Math.round(v * 10) / 10)); }
+  function xpSig(n) { return 60 + n * 40; }
+  function alAzar(lista) { return lista[Math.floor(Math.random() * lista.length)]; }
+
+  function guardar() {
+    try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {}
+  }
+
+  function cargar() {
+    try {
+      var bruto = localStorage.getItem(CLAVE);
+      return bruto ? JSON.parse(bruto) : null;
+    } catch (e) { return null; }
+  }
+
+  function especieDe(id) {
+    for (var i = 0; i < ESPECIES.length; i++) {
+      if (ESPECIES[i].id === id) { return ESPECIES[i]; }
+    }
+    return ESPECIES[0];
+  }
+
+  /* ---------------- paso del tiempo ---------------- */
+
+  function avanzarTiempo() {
+    if (!estado) { return; }
+    var ahora = Date.now();
+    var minutos = (ahora - estado.ultimo) / 60000;
+    if (minutos <= 0) { return; }
+    minutos = Math.min(minutos, MAX_MIN);
+    estado.hambre = limitar(estado.hambre - DECAIMIENTO.hambre * minutos);
+    estado.felicidad = limitar(estado.felicidad - DECAIMIENTO.felicidad * minutos);
+    estado.energia = limitar(estado.energia - DECAIMIENTO.energia * minutos);
+    estado.higiene = limitar(estado.higiene - DECAIMIENTO.higiene * minutos);
+    if (estado.hambre <= 0.5 || estado.higiene <= 0.5) {
+      estado.salud = limitar(estado.salud - minutos);
+    } else if (estado.hambre > 50 && estado.higiene > 50) {
+      estado.salud = limitar(estado.salud + 0.15 * minutos);
+    }
+    estado.ultimo = ahora;
+  }
+
+  function estadoAnimo() {
+    if (estado.salud <= 0) { return "triste"; }
+    var minimo = Math.min(estado.hambre, estado.felicidad, estado.energia, estado.higiene);
+    if (minimo <= 15) { return "triste"; }
+    if (minimo >= 70) { return "feliz"; }
+    return "normal";
+  }
+
+  /* ---------------- pintado ---------------- */
+
+  function pintar() {
+    if (!estado) { return; }
+    ["hambre", "felicidad", "energia", "higiene", "salud"].forEach(function (campo) {
+      document.getElementById("b-" + campo).style.width = estado[campo] + "%";
+      document.getElementById("v-" + campo).textContent = Math.round(estado[campo]);
+    });
+    document.getElementById("nivel").textContent = estado.nivel;
+    document.getElementById("xp").textContent = estado.xp;
+    document.getElementById("xp-sig").textContent = xpSig(estado.nivel);
+
+    var animo = estadoAnimo();
+    arte.dataset.estado = animo;
+    if (estado.salud <= 0) { arte.classList.add("desmayada"); }
+    else { arte.classList.remove("desmayada"); }
+
+    var ahora = Date.now();
+    var dormida = ahora - (estado.cd.dormir || 0) < 2600;
+    if (dormida) { arte.dataset.estado = "dormido"; }
+
+    botones.forEach(function (boton) {
+      var nombre = boton.dataset.accion;
+      var restante = Math.ceil((ACCIONES[nombre].cd * 1000 - (ahora - (estado.cd[nombre] || 0))) / 1000);
+      var bloqueada = restante > 0 || (estado.salud <= 0 && nombre !== "curar");
+      boton.disabled = bloqueada;
+      boton.textContent = restante > 0
+        ? boton.dataset.etiqueta + " " + restante + "s"
+        : boton.dataset.etiqueta;
+    });
+  }
+
+  /* ---------------- acciones ---------------- */
+
+  function ejecutar(nombre) {
+    if (!estado) { return; }
+    var cfg = ACCIONES[nombre];
+    var ahora = Date.now();
+    if (ahora - (estado.cd[nombre] || 0) < cfg.cd * 1000) { return; }
+    if (estado.salud <= 0 && nombre !== "curar") { return; }
+
+    var texto = "";
+
+    if (nombre === "alimentar") {
+      estado.hambre = limitar(estado.hambre + 22);
+      estado.felicidad = limitar(estado.felicidad + 4);
+      estado.higiene = limitar(estado.higiene - 4);
+      estado.salud = limitar(estado.salud + 1);
+    } else if (nombre === "jugar") {
+      estado.felicidad = limitar(estado.felicidad + 18);
+      estado.energia = limitar(estado.energia - 12);
+      estado.hambre = limitar(estado.hambre - 6);
+    } else if (nombre === "limpiar") {
+      estado.higiene = limitar(estado.higiene + 30);
+      estado.felicidad = limitar(estado.felicidad + 3);
+    } else if (nombre === "dormir") {
+      estado.energia = limitar(estado.energia + 35);
+      estado.felicidad = limitar(estado.felicidad - 2);
+      estado.hambre = limitar(estado.hambre - 4);
+    } else if (nombre === "curar") {
+      if (estado.salud <= 0) {
+        estado.salud = 25;
+        texto = "vuelve en sí poco a poco.";
+      } else {
+        estado.salud = limitar(estado.salud + 25);
+        estado.energia = limitar(estado.energia - 5);
+      }
+    } else if (nombre === "acariciar") {
+      estado.felicidad = limitar(estado.felicidad + 8);
+    }
+
+    estado.cd[nombre] = ahora;
+    estado.xp += cfg.xp;
+    while (estado.xp >= xpSig(estado.nivel) && estado.nivel < 50) {
+      estado.xp -= xpSig(estado.nivel);
+      estado.nivel += 1;
+      texto += " ¡Subió al nivel " + estado.nivel + "!";
+    }
+
+    registro.textContent = estado.nombre + " " + (texto || alAzar(FRASES[nombre]));
+    guardar();
+    pintar();
+  }
+
+  /* ---------------- arranque de la partida ---------------- */
+
+  function abrirJuego() {
+    document.getElementById("seleccion").classList.add("oculto");
+    document.getElementById("juego").classList.remove("oculto");
+    document.getElementById("herramientas").hidden = false;
+    document.getElementById("pie").textContent =
+      "Tu progreso se guarda solo en este navegador. Nada se envía a ningún servidor.";
+
+    var esp = especieDe(estado.especie);
+    arte.style.setProperty("--c1", esp.c1);
+    arte.style.setProperty("--c2", esp.c2);
+    arte.innerHTML = svgDe(esp);
+    arte.classList.add("flotar");
+    document.getElementById("nombre-pet").textContent = estado.nombre;
+
+    avanzarTiempo();
+    guardar();
+    pintar();
+    registro.textContent = "¡" + estado.nombre + " ya vive contigo!";
+
+    botones.forEach(function (boton) {
+      boton.dataset.etiqueta = boton.textContent;
+    });
+  }
+
+  /* ---------------- selección ---------------- */
+
+  var rejilla = document.getElementById("rejilla");
+  ESPECIES.forEach(function (esp) {
+    var boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = "opcion";
+    boton.innerHTML = svgDe(esp) + "<span>" + esp.nombre + "</span>";
+    boton.addEventListener("click", function () {
+      elegida = esp.id;
+      Array.prototype.forEach.call(rejilla.children, function (hijo) {
+        hijo.classList.remove("elegida");
+      });
+      boton.classList.add("elegida");
+      revisar();
+    });
+    rejilla.appendChild(boton);
+  });
+
+  var campoNombre = document.getElementById("nombre");
+  var btnAdoptar = document.getElementById("btn-adoptar");
+
+  function revisar() {
+    btnAdoptar.disabled = !(elegida && campoNombre.value.trim().length >= 2);
+  }
+
+  campoNombre.addEventListener("input", revisar);
+
+  btnAdoptar.addEventListener("click", function () {
+    var nombre = campoNombre.value.trim().slice(0, 16);
+    if (!elegida || nombre.length < 2) { return; }
+    estado = {
+      especie: elegida, nombre: nombre,
+      hambre: 80, felicidad: 80, energia: 80, higiene: 80, salud: 100,
+      xp: 0, nivel: 1, ultimo: Date.now(), cd: {}
+    };
+    guardar();
+    abrirJuego();
+  });
+
+  /* ---------------- botones del juego ---------------- */
+
+  botones.forEach(function (boton) {
+    boton.addEventListener("click", function () {
+      ejecutar(boton.dataset.accion);
+    });
+  });
+
+  document.getElementById("btn-reiniciar").addEventListener("click", function () {
+    if (!confirm("¿Empezar de cero con otra mascota? Se borra el progreso.")) { return; }
+    localStorage.removeItem(CLAVE);
+    estado = null;
+    document.getElementById("juego").classList.add("oculto");
+    document.getElementById("seleccion").classList.remove("oculto");
+    document.getElementById("herramientas").hidden = true;
+    elegida = null;
+    campoNombre.value = "";
+    btnAdoptar.disabled = true;
+    Array.prototype.forEach.call(rejilla.children, function (h) {
+      h.classList.remove("elegida");
+    });
+  });
+
+  document.getElementById("btn-enlace").addEventListener("click", function () {
+    var boton = this;
+    var url = window.location.href;
+    function hecho() {
+      boton.textContent = "¡Copiado!";
+      setTimeout(function () { boton.textContent = "Copiar enlace"; }, 1600);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(hecho, function () { window.prompt("Copia el enlace:", url); });
+    } else {
+      window.prompt("Copia el enlace:", url);
+    }
+  });
+
+  /* ---------------- ciclos ---------------- */
+
+  setInterval(function () {
+    if (!estado) { return; }
+    avanzarTiempo();
+    guardar();
+    pintar();
+  }, 15000);
+
+  setInterval(function () {
+    if (estado) { pintar(); }
+  }, 1000);
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && estado) { avanzarTiempo(); guardar(); pintar(); }
+  });
+
+  /* ---------------- recuperar partida ---------------- */
+
+  (function inicio() {
+    var guardada = cargar();
+    if (guardada && guardada.especie && guardada.nombre) {
+      estado = guardada;
+      if (!estado.cd) { estado.cd = {}; }
+      abrirJuego();
+    }
+  })();
+})();
+</script>
+</body>
+</html>
